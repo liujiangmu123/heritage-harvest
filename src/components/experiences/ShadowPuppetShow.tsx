@@ -19,8 +19,28 @@ import {
   SkipForward
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Hands, Results } from '@mediapipe/hands'
-import { Camera as MPCamera } from '@mediapipe/camera_utils'
+// MediaPipe 类型定义
+interface HandsOptions {
+  locateFile?: (file: string) => string
+}
+
+interface HandsConfig {
+  maxNumHands: number
+  modelComplexity: number
+  minDetectionConfidence: number
+  minTrackingConfidence: number
+}
+
+interface HandLandmark {
+  x: number
+  y: number
+  z: number
+}
+
+interface Results {
+  multiHandLandmarks?: HandLandmark[][]
+  multiHandedness?: Array<{ label: string }>
+}
 
 // 皮影关节点定义
 interface JointPoint {
@@ -142,40 +162,80 @@ export default function ShadowPuppetShow() {
     isWalking: false,
   })
 
+  // 动态加载 MediaPipe 脚本
+  const loadScript = (src: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve()
+        return
+      }
+      const script = document.createElement('script')
+      script.src = src
+      script.onload = () => resolve()
+      script.onerror = reject
+      document.head.appendChild(script)
+    })
+  }
+
   // 初始化 MediaPipe Hands
   const initializeHands = useCallback(async () => {
     if (!videoRef.current) return
 
     setIsLoading(true)
 
-    const hands = new Hands({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-    })
+    try {
+      // 动态加载 MediaPipe 脚本
+      await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js')
+      await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js')
 
-    hands.setOptions({
-      maxNumHands: 2,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.7,
-      minTrackingConfidence: 0.5,
-    })
+      // 等待脚本加载完成
+      await new Promise(resolve => setTimeout(resolve, 100))
 
-    hands.onResults((results: Results) => {
-      processHandResults(results)
-    })
-
-    const camera = new MPCamera(videoRef.current, {
-      onFrame: async () => {
-        if (videoRef.current) {
-          await hands.send({ image: videoRef.current })
+      const win = window as unknown as {
+        Hands: new (options: HandsOptions) => {
+          setOptions: (config: HandsConfig) => void
+          onResults: (callback: (results: Results) => void) => void
+          send: (input: { image: HTMLVideoElement }) => Promise<void>
         }
-      },
-      width: 640,
-      height: 480,
-    })
+        Camera: new (video: HTMLVideoElement, config: {
+          onFrame: () => Promise<void>
+          width: number
+          height: number
+        }) => { start: () => Promise<void> }
+      }
 
-    await camera.start()
-    setIsLoading(false)
-    setIsStarted(true)
+      const hands = new win.Hands({
+        locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+      })
+
+      hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.5,
+      })
+
+      hands.onResults((results: Results) => {
+        processHandResults(results)
+      })
+
+      const camera = new win.Camera(videoRef.current, {
+        onFrame: async () => {
+          if (videoRef.current) {
+            await hands.send({ image: videoRef.current })
+          }
+        },
+        width: 640,
+        height: 480,
+      })
+
+      await camera.start()
+      setIsLoading(false)
+      setIsStarted(true)
+    } catch (error) {
+      console.error('MediaPipe 加载失败:', error)
+      setIsLoading(false)
+    }
   }, [])
 
   // 处理手势结果
