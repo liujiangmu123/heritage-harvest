@@ -63,11 +63,11 @@ export default function Footer() {
             {/* 联系信息 */}
             <div className="space-y-3">
               <a 
-                href="mailto:contact@heritage-viz.com" 
+                href="mailto:2533553610@qq.com" 
                 className="flex items-center gap-3 text-ink-300 hover:text-heritage-400 transition-colors"
               >
                 <Mail className="w-5 h-5" />
-                contact@heritage-viz.com
+                2533553610@qq.com
               </a>
               <div className="flex items-start gap-3 text-ink-300">
                 <MapPin className="w-5 h-5 mt-0.5" />
