@@ -329,6 +329,8 @@ export const badges: Badge[] = [
   },
 ]
 
+
+
 // 数字藏品数据
 export const collectibles: DigitalCollectible[] = [
   {

@@ -25,6 +25,21 @@ const badgeVariants = cva(
         provincial: 'bg-orange-50 text-orange-700 border border-orange-200',
         municipal: 'bg-blue-50 text-blue-700 border border-blue-200',
         county: 'bg-green-50 text-green-700 border border-green-200',
+        // 生态主题
+        eco: 'bg-eco-100 text-eco-700 border border-eco-200',
+        carbon: 'bg-carbon-100 text-carbon-700 border border-carbon-200',
+        green: 'bg-gradient-to-r from-eco-100 to-eco-200 text-eco-800 border border-eco-300',
+        // 故宫红主题（非遗文化）
+        'heritage-red': 'bg-heritage-100 text-heritage-700 border border-heritage-200',
+        'heritage-solid': 'bg-heritage-500 text-white border-0',
+        // 红绿融合主题
+        'heritage-eco': 'bg-gradient-to-r from-heritage-100 via-gold-100 to-eco-100 text-heritage-700 border border-heritage-200',
+        'heritage-eco-solid': 'bg-gradient-to-r from-heritage-500 via-gold-500 to-eco-500 text-white border-0',
+        // 生态等级
+        seedling: 'bg-eco-50 text-eco-600 border border-eco-200',
+        sprout: 'bg-eco-100 text-eco-700 border border-eco-300',
+        guardian: 'bg-eco-200 text-eco-800 border border-eco-400',
+        master: 'bg-gradient-to-r from-eco-500 to-eco-600 text-white border-0',
       },
       size: {
         sm: 'text-xs px-2 py-0.5',

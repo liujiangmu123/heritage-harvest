@@ -2,7 +2,7 @@ import { forwardRef, HTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'heritage' | 'glass' | 'nft'
+  variant?: 'default' | 'heritage' | 'glass' | 'nft' | 'eco' | 'carbon' | 'heritage-eco' | 'pledge' | 'achievement' | 'heritage-red' | 'experience-entry' | 'eco-module' | 'seasonal'
 }
 
 const Card = forwardRef<HTMLDivElement, CardProps>(
@@ -12,6 +12,20 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
       heritage: 'heritage-card',
       glass: 'glass-card rounded-2xl',
       nft: 'nft-card',
+      // 生态主题卡片
+      eco: 'eco-card',
+      carbon: 'carbon-card',
+      'heritage-eco': 'heritage-eco-card',
+      pledge: 'pledge-card',
+      achievement: 'achievement-card',
+      // 故宫红主题卡片（非遗文化）
+      'heritage-red': 'heritage-card-red',
+      // 非遗体验入口卡片（故宫红为主）
+      'experience-entry': 'experience-entry-card',
+      // 生态功能模块卡片（生态绿为主）
+      'eco-module': 'eco-module-card',
+      // 季节活动卡片
+      seasonal: 'seasonal-card',
     }
 
     return (

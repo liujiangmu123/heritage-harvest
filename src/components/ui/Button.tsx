@@ -17,6 +17,17 @@ const buttonVariants = cva(
         link: 'text-primary-600 underline-offset-4 hover:underline focus:ring-primary-500',
         glass: 'glass-card text-ink-700 hover:bg-white/90 focus:ring-primary-500',
         danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
+        // 生态主题按钮
+        eco: 'bg-gradient-to-r from-eco-500 to-eco-600 text-white hover:from-eco-600 hover:to-eco-700 shadow-eco hover:shadow-eco-hover focus:ring-eco-500',
+        'eco-outline': 'border-2 border-eco-500 text-eco-600 hover:bg-eco-50 focus:ring-eco-500',
+        green: 'bg-gradient-to-r from-eco-400 to-eco-500 text-white hover:from-eco-500 hover:to-eco-600 shadow-lg hover:shadow-xl focus:ring-eco-500',
+        carbon: 'bg-gradient-to-r from-carbon-500 to-carbon-600 text-white hover:from-carbon-600 hover:to-carbon-700 shadow-carbon hover:shadow-lg focus:ring-carbon-500',
+        // 故宫红主题按钮（非遗文化）
+        'heritage-red': 'bg-gradient-to-r from-heritage-500 to-heritage-600 text-white hover:from-heritage-600 hover:to-heritage-700 shadow-heritage hover:shadow-heritage-hover focus:ring-heritage-500',
+        'heritage-red-outline': 'border-2 border-heritage-500 text-heritage-600 hover:bg-heritage-50 focus:ring-heritage-500',
+        // 红绿融合主题按钮
+        'heritage-eco': 'bg-heritage-eco-gradient text-white hover:opacity-90 shadow-heritage-eco hover:shadow-lg focus:ring-heritage-500',
+        'heritage-eco-outline': 'border-2 border-heritage-500 text-heritage-600 hover:bg-gradient-to-r hover:from-heritage-50 hover:to-eco-50 focus:ring-heritage-500',
       },
       size: {
         sm: 'h-9 px-4 text-sm',

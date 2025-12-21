@@ -98,9 +98,9 @@ export function useAudio() {
 
     try {
       // 尝试从预设或URL加载
-      let buffer = audioBuffersRef.current.get(urlOrId)
+      let buffer: AudioBuffer | undefined = audioBuffersRef.current.get(urlOrId)
       if (!buffer) {
-        buffer = await loadAudio(urlOrId, urlOrId)
+        buffer = await loadAudio(urlOrId, urlOrId) ?? undefined
       }
       if (!buffer) return null
 

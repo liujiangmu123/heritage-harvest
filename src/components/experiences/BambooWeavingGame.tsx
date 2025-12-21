@@ -13,7 +13,7 @@ import { useRef, useState, useEffect, useCallback, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { 
   OrbitControls, 
-  Environment, 
+  Environment,
   ContactShadows,
   Html,
   useProgress,
@@ -26,13 +26,251 @@ import {
   RotateCcw, 
   Play, 
   Award,
-  ChevronRight,
   Sparkles,
   Info,
   Camera,
   Monitor,
+  Leaf,
+  Recycle,
+  TreeDeciduous,
+  Share2,
+  X,
 } from 'lucide-react'
+import ShareCardGenerator from '@/components/eco/ShareCardGenerator'
 import { Button } from '@/components/ui/Button'
+import { useGreenPointsStore } from '@/store/greenPointsStore'
+import { useCarbonAccountStore } from '@/store/carbonAccountStore'
+import { useEcoAchievementStore } from '@/store/ecoAchievementStore'
+import { usePolaroidStore } from '@/store/polaroidStore'
+import { useArtworkStore } from '@/store/artworkStore'
+import { CARBON_SAVINGS_CONFIG } from '@/types/eco'
+import { useNavigate } from 'react-router-dom'
+
+// ============ 千人千样配置 + 编织DNA创新 ============
+interface UniqueDesign {
+  seed: number
+  patternStyle: 'classic' | 'modern' | 'artistic' | 'nature'
+  colorScheme: {
+    primary: string
+    secondary: string
+    accent: string
+    highlight: string
+  }
+  weaveDensity: number  // 0.8-1.2
+  twistFactor: number   // 0-0.5
+  patternName: string
+  productShape: ProductShape  // 产品形状
+}
+
+// 产品形状类型（前置声明）
+type ProductShape = 'lantern' | 'basket' | 'vase' | 'sphere' | 'sculpture'
+
+// ============ 编织DNA - 记录编织过程生成独特个性 ============
+interface WeavingDNA {
+  rhythmPattern: number[]     // 编织节奏（速度变化序列）
+  totalTime: number           // 总耗时（秒）
+  avgSpeed: number            // 平均速度
+  peakSpeed: number           // 峰值速度
+  smoothness: number          // 平滑度（0-100）
+  creativity: number          // 创意度（基于节奏变化）
+  persistence: number         // 坚持度（无间断时长）
+  craftLevel: '初学者' | '入门' | '熟练' | '精通' | '大师'
+  uniqueTitle: string         // 独特称号
+  productStyle: ProductShape  // 成品样式
+}
+
+// 编织成品样式配置 + 3D形状参数
+const PRODUCT_STYLES = {
+  lantern: { 
+    name: '藤编灯笼', icon: '🏮', desc: '光影交织，温暖如诗',
+    // 灯笼形状：上下收窄，中间膨胀
+    profile: [
+      { y: 0, r: 0.2 }, { y: 0.3, r: 0.35 }, { y: 0.6, r: 0.5 },
+      { y: 1.0, r: 0.55 }, { y: 1.5, r: 0.5 }, { y: 2.0, r: 0.55 },
+      { y: 2.4, r: 0.5 }, { y: 2.7, r: 0.35 }, { y: 3.0, r: 0.2 }
+    ],
+    weaveTurns: 25, weaveStyle: 'dense'
+  },
+  basket: { 
+    name: '收纳花篮', icon: '🧺', desc: '生活美学，实用之选',
+    // 花篮形状：底部窄，顶部宽敞
+    profile: [
+      { y: 0, r: 0.25 }, { y: 0.3, r: 0.3 }, { y: 0.6, r: 0.38 },
+      { y: 1.0, r: 0.45 }, { y: 1.5, r: 0.5 }, { y: 2.0, r: 0.55 },
+      { y: 2.5, r: 0.6 }, { y: 2.8, r: 0.62 }, { y: 3.0, r: 0.65 }
+    ],
+    weaveTurns: 18, weaveStyle: 'loose'
+  },
+  vase: { 
+    name: '艺术花瓶', icon: '🏺', desc: '典雅造型，插花佳器',
+    // 花瓶形状：经典曲线
+    profile: [
+      { y: 0, r: 0.35 }, { y: 0.3, r: 0.42 }, { y: 0.6, r: 0.5 },
+      { y: 1.0, r: 0.52 }, { y: 1.4, r: 0.4 }, { y: 1.8, r: 0.26 },
+      { y: 2.2, r: 0.28 }, { y: 2.6, r: 0.42 }, { y: 3.0, r: 0.5 }
+    ],
+    weaveTurns: 20, weaveStyle: 'classic'
+  },
+  sphere: { 
+    name: '藤编圆球', icon: '🔮', desc: '圆润造型，装饰首选',
+    // 圆球形状
+    profile: [
+      { y: 0, r: 0.15 }, { y: 0.4, r: 0.4 }, { y: 0.8, r: 0.52 },
+      { y: 1.2, r: 0.58 }, { y: 1.5, r: 0.58 }, { y: 1.8, r: 0.52 },
+      { y: 2.2, r: 0.4 }, { y: 2.6, r: 0.25 }, { y: 3.0, r: 0.1 }
+    ],
+    weaveTurns: 22, weaveStyle: 'wave'
+  },
+  sculpture: { 
+    name: '艺术摆件', icon: '🎨', desc: '独特造型，匠心独运',
+    // 不规则艺术形状
+    profile: [
+      { y: 0, r: 0.3 }, { y: 0.4, r: 0.5 }, { y: 0.8, r: 0.35 },
+      { y: 1.2, r: 0.55 }, { y: 1.6, r: 0.3 }, { y: 2.0, r: 0.5 },
+      { y: 2.4, r: 0.35 }, { y: 2.7, r: 0.45 }, { y: 3.0, r: 0.25 }
+    ],
+    weaveTurns: 15, weaveStyle: 'artistic'
+  },
+}
+
+
+// 工艺等级配置
+const CRAFT_LEVELS = [
+  { min: 0, max: 20, level: '初学者' as const, title: '藤艺新手', color: '#9E9E9E' },
+  { min: 20, max: 40, level: '入门' as const, title: '编织学徒', color: '#8BC34A' },
+  { min: 40, max: 60, level: '熟练' as const, title: '藤艺匠人', color: '#2196F3' },
+  { min: 60, max: 80, level: '精通' as const, title: '编织达人', color: '#9C27B0' },
+  { min: 80, max: 100, level: '大师' as const, title: '非遗传承人', color: '#FF9800' },
+]
+
+// 基于编织过程生成DNA（增强版：每次都有明显差异）
+function generateWeavingDNA(rhythmData: number[], totalTime: number, designSeed?: number): WeavingDNA {
+  // 使用时间戳和设计种子增加随机性
+  const timeSeed = Date.now()
+  const randomFactor = (timeSeed % 1000) / 1000  // 0-1的随机因子
+  const seed = designSeed || timeSeed
+  
+  const avgSpeed = rhythmData.length > 0 ? rhythmData.reduce((a, b) => a + b, 0) / rhythmData.length : 0.5
+  const peakSpeed = Math.max(...rhythmData, 0.3)
+  
+  // 计算平滑度（基于节奏变化 + 随机波动）
+  let variance = 0
+  if (rhythmData.length > 1) {
+    for (let i = 1; i < rhythmData.length; i++) {
+      variance += Math.abs(rhythmData[i] - rhythmData[i-1])
+    }
+    variance /= rhythmData.length - 1
+  }
+  // 增加随机波动使每次不同
+  const smoothness = Math.max(20, Math.min(95, 70 + randomFactor * 30 - variance * 100))
+  
+  // 计算创意度（基于节奏多样性 + 时间因子）
+  const uniqueRhythms = new Set(rhythmData.map(r => Math.round(r * 10))).size
+  const timeVariety = (totalTime % 10) * 5  // 基于完成时间的个位数
+  const creativity = Math.max(25, Math.min(95, 40 + uniqueRhythms * 3 + timeVariety + randomFactor * 20))
+  
+  // 计算坚持度（基于总时长 + 随机因子）
+  const persistence = Math.max(30, Math.min(95, 50 + (totalTime / 30) * 20 + randomFactor * 25))
+  
+  // 综合评分（加入随机波动）
+  const baseScore = (smoothness * 0.25 + creativity * 0.25 + persistence * 0.25 + (avgSpeed * 80 + 20) * 0.25)
+  const score = Math.max(15, Math.min(95, baseScore + (randomFactor - 0.5) * 15))
+  
+  // 确定工艺等级
+  const levelConfig = CRAFT_LEVELS.find(l => score >= l.min && score < l.max) || CRAFT_LEVELS[2]
+  
+  // 确定成品样式（基于种子随机选择）
+  const products = Object.keys(PRODUCT_STYLES) as Array<keyof typeof PRODUCT_STYLES>
+  const productIndex = (seed + Math.floor(totalTime * 10)) % products.length
+  const productStyle = products[productIndex]
+  
+  // 生成独特称号（使用更多组合）
+  const prefixes = ['灵巧', '细腻', '沉稳', '创意', '专注', '自然', '流畅', '艺术', '精巧', '雅致', '匠心', '妙手']
+  const suffixes = ['编织师', '藤艺家', '匠人', '创作者', '手艺人', '工艺师', '织造者', '编艺人']
+  const prefixIndex = (seed + Math.floor(smoothness)) % prefixes.length
+  const suffixIndex = (Math.floor(timeSeed / 1000) + Math.floor(creativity)) % suffixes.length
+  const uniqueTitle = `${prefixes[prefixIndex]}${suffixes[suffixIndex]}`
+  
+  return {
+    rhythmPattern: rhythmData.slice(-20),
+    totalTime,
+    avgSpeed,
+    peakSpeed,
+    smoothness: Math.round(smoothness),
+    creativity: Math.round(creativity),
+    persistence: Math.round(persistence),
+    craftLevel: levelConfig.level,
+    uniqueTitle,
+    productStyle,
+  }
+}
+
+const PATTERN_STYLES = {
+  classic: { name: '古典编织', icon: '🏛️' },
+  modern: { name: '现代简约', icon: '✨' },
+  artistic: { name: '艺术抽象', icon: '🎨' },
+  nature: { name: '自然纹理', icon: '🌿' },
+}
+
+const COLOR_SCHEMES = [
+  { primary: '#A67B4B', secondary: '#8B5E34', accent: '#C4956A', highlight: '#DEB887', name: '经典棕' },
+  { primary: '#2E7D32', secondary: '#1B5E20', accent: '#4CAF50', highlight: '#81C784', name: '翠竹绿' },
+  { primary: '#5D4037', secondary: '#3E2723', accent: '#8D6E63', highlight: '#A1887F', name: '深木棕' },
+  { primary: '#FF8A65', secondary: '#E64A19', accent: '#FFAB91', highlight: '#FFCCBC', name: '暖阳橙' },
+  { primary: '#7986CB', secondary: '#3F51B5', accent: '#9FA8DA', highlight: '#C5CAE9', name: '静谧蓝' },
+  { primary: '#F48FB1', secondary: '#E91E63', accent: '#F8BBD9', highlight: '#FCE4EC', name: '花漫粉' },
+  { primary: '#FFD54F', secondary: '#FFA000', accent: '#FFE082', highlight: '#FFF8E1', name: '金秋黄' },
+  { primary: '#80CBC4', secondary: '#00897B', accent: '#B2DFDB', highlight: '#E0F2F1', name: '清新青' },
+]
+
+// 生成千人千样的独特设计
+function generateUniqueDesign(): UniqueDesign {
+  const seed = Math.floor(Math.random() * 1000000)
+  const patterns = Object.keys(PATTERN_STYLES) as Array<keyof typeof PATTERN_STYLES>
+  const patternStyle = patterns[seed % patterns.length]
+  const colorScheme = COLOR_SCHEMES[seed % COLOR_SCHEMES.length]
+  
+  // 基于种子生成变化
+  const weaveDensity = 0.8 + (seed % 40) / 100  // 0.8-1.2
+  const twistFactor = (seed % 50) / 100  // 0-0.5
+  
+  // 生成独特名称
+  const adjectives = ['灵动', '精巧', '贞雅', '综横', '妙想', '细腔', '自然', '编韵']
+  const nouns = ['花篮', '春风', '竹韵', '泉声', '月影', '云纹', '流彩', '旬影']
+  const patternName = `${adjectives[seed % adjectives.length]}·${nouns[(seed >> 4) % nouns.length]}`
+  
+  // 基于种子选择产品形状
+  const shapes: ProductShape[] = ['lantern', 'basket', 'vase', 'sphere', 'sculpture']
+  const productShape = shapes[(seed >> 8) % shapes.length]
+  
+  return {
+    seed,
+    patternStyle,
+    colorScheme,
+    weaveDensity,
+    twistFactor,
+    patternName,
+    productShape,
+  }
+}
+
+// ============ 以竹代塑环保数据 ============
+const BAMBOO_VS_PLASTIC_DATA = {
+  // 一个藤编花瓶相当于减少的塑料使用量（克）
+  plasticReduced: 350,
+  // 塑料分解时间（年）
+  plasticDecomposeYears: 450,
+  // 竹子分解时间（月）
+  bambooDecomposeMonths: 6,
+  // 竹子生长周期（年）
+  bambooGrowthYears: 3,
+  // 每公顷竹林年固碳量（吨）
+  bambooForestCarbonPerHa: 12,
+  // 竹制品相比塑料减少的碳排放（%）
+  carbonReductionPercent: 70,
+  // 竹子可再生次数
+  bambooRenewableTimes: 60,
+}
 
 // ============ 手部追踪Hook ============
 interface HandLandmark {
@@ -48,10 +286,10 @@ interface HandTrackingState {
   handedness: 'Left' | 'Right' | null
   isLoading: boolean
   error: string | null
-  // 新增：手部旋转角度和运动数据
-  rotation: number  // 手掌旋转角度 (0-360)
-  rotationSpeed: number  // 旋转速度
-  palmCenter: { x: number; y: number } | null  // 手掌中心位置
+  // 新增：手部旋转角度和运动数据 - 改为 Ref 管理以避免重渲染
+  // rotation: number  
+  // rotationSpeed: number
+  // palmCenter: { x: number; y: number } | null
 }
 
 function useHandTracking(videoRef: React.RefObject<HTMLVideoElement>, enabled: boolean) {
@@ -62,9 +300,18 @@ function useHandTracking(videoRef: React.RefObject<HTMLVideoElement>, enabled: b
     handedness: null,
     isLoading: false,
     error: null,
+    // rotation: 0,
+    // rotationSpeed: 0,
+    // palmCenter: null
+  })
+  
+  // 高频数据使用 Ref 存储
+  const handDataRef = useRef({
+    landmarks: null as HandLandmark[] | null,
     rotation: 0,
     rotationSpeed: 0,
-    palmCenter: null
+    palmCenter: null as { x: number; y: number } | null,
+    gesture: 'none'
   })
   const handsRef = useRef<any>(null)
   const cameraRef = useRef<any>(null)
@@ -281,26 +528,47 @@ function useHandTracking(videoRef: React.RefObject<HTMLVideoElement>, enabled: b
             // 计算旋转数据
             const rotationData = calculateRotation(landmarks)
             
-            setState(prev => ({
-              ...prev,
-              isTracking: true,
+            // 更新 Ref 数据（不触发重渲染）
+            handDataRef.current = {
               landmarks,
-              gesture,
-              handedness,
-              isLoading: false,
               rotation: rotationData.rotation,
               rotationSpeed: rotationData.speed,
-              palmCenter: rotationData.center
-            }))
+              palmCenter: rotationData.center,
+              gesture
+            }
+            
+            // 仅当关键状态变化时才更新 State
+            setState(prev => {
+              if (prev.isTracking && prev.gesture === gesture && prev.handedness === handedness) {
+                return prev
+              }
+              return {
+                ...prev,
+                isTracking: true,
+                landmarks, // 保留 landmarks 在 state 中用于 2D 绘制，如果需要更高性能可以移除
+                gesture,
+                handedness,
+                isLoading: false
+              }
+            })
           } else {
-            setState(prev => ({
-              ...prev,
-              isTracking: false,
+            handDataRef.current = {
               landmarks: null,
-              gesture: smoothGesture('none') as any,
+              rotation: 0,
               rotationSpeed: 0,
-              palmCenter: null
-            }))
+              palmCenter: null,
+              gesture: 'none'
+            }
+            
+            setState(prev => {
+               if (!prev.isTracking && prev.gesture === 'none') return prev
+               return {
+                ...prev,
+                isTracking: false,
+                landmarks: null,
+                gesture: smoothGesture('none') as any,
+              }
+            })
           }
         })
         
@@ -355,14 +623,11 @@ function useHandTracking(videoRef: React.RefObject<HTMLVideoElement>, enabled: b
         handedness: null,
         isLoading: false,
         error: null,
-        rotation: 0,
-        rotationSpeed: 0,
-        palmCenter: null
       })
     }
   }, [enabled])
   
-  return state
+  return { state, handDataRef }
 }
 
 // ============ 3D加载指示器 ============
@@ -379,7 +644,11 @@ function Loader() {
 }
 
 // ============ 世界级精细铁艺骨架模型 ============
-function DetailedIronFrame() {
+interface DetailedIronFrameProps {
+  productShape?: ProductShape
+}
+
+function DetailedIronFrame({ productShape = 'vase' }: DetailedIronFrameProps) {
   const groupRef = useRef<THREE.Group>(null)
   const frameColor = "#0a0a0a"
   const decorColor = "#1a1a1a"
@@ -394,25 +663,9 @@ function DetailedIronFrame() {
     }
   })
   
-  // 主体轮廓点 - 精细花瓶形状
-  const profilePoints = [
-    { y: 0, r: 0.35 },
-    { y: 0.15, r: 0.38 },
-    { y: 0.3, r: 0.42 },
-    { y: 0.5, r: 0.5 },
-    { y: 0.8, r: 0.55 },
-    { y: 1.0, r: 0.52 },
-    { y: 1.2, r: 0.48 },
-    { y: 1.4, r: 0.4 },
-    { y: 1.6, r: 0.32 },
-    { y: 1.8, r: 0.26 },
-    { y: 2.0, r: 0.24 },
-    { y: 2.2, r: 0.28 },
-    { y: 2.4, r: 0.35 },
-    { y: 2.6, r: 0.42 },
-    { y: 2.8, r: 0.47 },
-    { y: 3.0, r: 0.5 },
-  ]
+  // 根据产品形状获取轮廓点（千人千样形状）
+  const shapeConfig = PRODUCT_STYLES[productShape]
+  const profilePoints = shapeConfig.profile
   
   // 生成主骨架线（16条，更精细）
   const mainFrameLines = Array.from({ length: 16 }).map((_, i) => {
@@ -705,19 +958,21 @@ function CompletionEffect({ isComplete }: { isComplete: boolean }) {
 // ============ 世界级藤条模型 ============
 interface DetailedVineProps {
   progress: number
+  colorScheme?: {
+    primary: string
+    secondary: string
+    accent: string
+    highlight: string
+  }
+  productShape?: ProductShape
 }
 
-function DetailedVine({ progress }: DetailedVineProps) {
+function DetailedVine({ progress, colorScheme, productShape = 'vase' }: DetailedVineProps) {
   const groupRef = useRef<THREE.Group>(null)
   
-  // 精细花瓶轮廓（与铁架匹配）
-  const profilePoints = [
-    { y: 0, r: 0.35 }, { y: 0.15, r: 0.38 }, { y: 0.3, r: 0.42 },
-    { y: 0.5, r: 0.5 }, { y: 0.8, r: 0.55 }, { y: 1.0, r: 0.52 },
-    { y: 1.2, r: 0.48 }, { y: 1.4, r: 0.4 }, { y: 1.6, r: 0.32 },
-    { y: 1.8, r: 0.26 }, { y: 2.0, r: 0.24 }, { y: 2.2, r: 0.28 },
-    { y: 2.4, r: 0.35 }, { y: 2.6, r: 0.42 }, { y: 2.8, r: 0.47 }, { y: 3.0, r: 0.5 },
-  ]
+  // 根据产品形状获取轮廓点（千人千样形状）
+  const shapeConfig = PRODUCT_STYLES[productShape]
+  const profilePoints = shapeConfig.profile
   
   const getRadiusAtHeight = (y: number) => {
     for (let i = 0; i < profilePoints.length - 1; i++) {
@@ -804,8 +1059,13 @@ function DetailedVine({ progress }: DetailedVineProps) {
   
   if (!partial1) return null
   
-  // 藤条颜色 - 自然渐变
-  const vineColors = {
+  // 藤条颜色 - 使用千人千样配色（如果提供）
+  const vineColors = colorScheme ? {
+    light: colorScheme.highlight,
+    medium: colorScheme.primary,
+    dark: colorScheme.secondary,
+    accent: colorScheme.accent,
+  } : {
     light: '#A67B4B',    // 浅棕色
     medium: '#8B5E34',   // 中棕色
     dark: '#5D4E37',     // 深棕色
@@ -1038,13 +1298,15 @@ type ViewMode = 'auto' | 'outside' | 'inside' | 'detail' | 'overview'
 interface CameraRigProps {
   progress: number
   isWeaving: boolean
-  handRotation: number
-  rotationSpeed: number
-  palmCenter: { x: number; y: number } | null
+  handDataRef: React.RefObject<{
+    rotation: number
+    rotationSpeed: number
+    palmCenter: { x: number; y: number } | null
+  }>
   viewMode: ViewMode
 }
 
-function CameraRig({ progress, isWeaving, rotationSpeed, palmCenter, viewMode }: CameraRigProps) {
+function CameraRig({ progress, isWeaving, handDataRef, viewMode }: CameraRigProps) {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
   const targetPos = useRef(new THREE.Vector3(2.5, 2, 2.5))
   const targetLookAt = useRef(new THREE.Vector3(0, 0.5, 0))
@@ -1076,6 +1338,8 @@ function CameraRig({ progress, isWeaving, rotationSpeed, palmCenter, viewMode }:
     const weavingAngle = t * 18 * Math.PI * 2
     
     // 手动旋转
+    if (!handDataRef.current) return
+    const { rotationSpeed, palmCenter } = handDataRef.current
     if (isWeaving && Math.abs(rotationSpeed) > 3) {
       manualRotation.current += rotationSpeed * 0.005
     }
@@ -1109,15 +1373,15 @@ function CameraRig({ progress, isWeaving, rotationSpeed, palmCenter, viewMode }:
       fov = 45
       
     } else if (activeView === 'overview') {
-      // ===== 全貌视角：高处俯瞰整体 =====
-      const overviewAngle = time * 0.1 + manualRotation.current
+      // ===== 全貌视角：超远距离俯瞰整体（确保模型完整显示）=====
+      const overviewAngle = time * 0.04 + manualRotation.current
       newPos = new THREE.Vector3(
-        Math.cos(overviewAngle) * 4,
-        2.5,
-        Math.sin(overviewAngle) * 4
+        Math.cos(overviewAngle) * 6,
+        3,
+        Math.sin(overviewAngle) * 6
       )
-      newLookAt = new THREE.Vector3(0, 0.3, 0)
-      fov = 40
+      newLookAt = new THREE.Vector3(0, 1.5, 0)
+      fov = 50
       
     } else if (activeView === 'inside') {
       // ===== 内部视角：从花瓶内部向外看 =====
@@ -1372,13 +1636,22 @@ interface SceneProps {
   progress: number
   isComplete: boolean
   isWeaving: boolean
-  handRotation: number
-  rotationSpeed: number
-  palmCenter: { x: number; y: number } | null
+  handDataRef: React.RefObject<{
+    rotation: number
+    rotationSpeed: number
+    palmCenter: { x: number; y: number } | null
+  }>
   viewMode: ViewMode
+  colorScheme?: {
+    primary: string
+    secondary: string
+    accent: string
+    highlight: string
+  }
+  productShape?: ProductShape
 }
 
-function Scene({ progress, isComplete, isWeaving, handRotation, rotationSpeed, palmCenter, viewMode }: SceneProps) {
+function Scene({ progress, isComplete, isWeaving, handDataRef, viewMode, colorScheme, productShape }: SceneProps) {
   const groupRef = useRef<THREE.Group>(null)
   const keyLightRef = useRef<THREE.SpotLight>(null)
   
@@ -1397,9 +1670,7 @@ function Scene({ progress, isComplete, isWeaving, handRotation, rotationSpeed, p
       <CameraRig 
         progress={progress} 
         isWeaving={isWeaving} 
-        handRotation={handRotation}
-        rotationSpeed={rotationSpeed}
-        palmCenter={palmCenter}
+        handDataRef={handDataRef}
         viewMode={viewMode}
       />
       
@@ -1448,10 +1719,10 @@ function Scene({ progress, isComplete, isWeaving, handRotation, rotationSpeed, p
         />
       )}
       
-      {/* 主模型组 */}
-      <group ref={groupRef} position={[0, -1.5, 0]}>
-        <DetailedIronFrame />
-        <DetailedVine progress={progress} />
+      {/* 主模型组 - 整体缩放0.8倍 */}
+      <group ref={groupRef} position={[0, -1.2, 0]} scale={0.8}>
+        <DetailedIronFrame productShape={productShape} />
+        <DetailedVine progress={progress} colorScheme={colorScheme} productShape={productShape} />
         <WeavingCursor progress={progress} isWeaving={isWeaving} />
         <WeavingParticles progress={progress} isWeaving={isWeaving} />
         <AmbientEffects isWeaving={isWeaving} />
@@ -1474,8 +1745,8 @@ function Scene({ progress, isComplete, isWeaving, handRotation, rotationSpeed, p
         <meshBasicMaterial color="#1a1208" transparent opacity={0.15} />
       </mesh>
       
-      {/* 环境贴图 - 工作室氛围 */}
-      <Environment preset="studio" />
+      {/* 环境贴图 - 使用本地HDR文件 */}
+      <Environment files="/heritage-harvest/studio_small_03_1k.hdr" />
       
       {/* 背景渐变 */}
       <color attach="background" args={['#1a1612']} />
@@ -1497,12 +1768,20 @@ function Scene({ progress, isComplete, isWeaving, handRotation, rotationSpeed, p
   )
 }
 
-// 进度条组件
-function ProgressBar({ progress }: { progress: number }) {
+// 进度条组件 - 千人千样配色
+function ProgressBar({ progress, colors }: { 
+  progress: number
+  colors?: { primary: string; accent: string }
+}) {
+  const gradientStyle = colors ? {
+    background: `linear-gradient(to right, ${colors.primary}, ${colors.accent})`
+  } : undefined
+  
   return (
     <div className="w-full bg-paper-600 rounded-full h-3 overflow-hidden">
       <motion.div
-        className="h-full bg-gradient-to-r from-palace-500 to-gold-500 rounded-full"
+        className="h-full rounded-full"
+        style={gradientStyle || { background: 'linear-gradient(to right, #A73A36, #F2D974)' }}
         initial={{ width: 0 }}
         animate={{ width: `${progress * 100}%` }}
         transition={{ duration: 0.1 }}
@@ -1550,6 +1829,26 @@ function GestureIndicator({ gesture, isTracking, isWeaving }: GestureIndicatorPr
   )
 }
 
+// ============ 触觉反馈系统 ============
+function useHapticFeedback() {
+  const vibrate = useCallback((pattern: number | number[]) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate(pattern)
+      } catch (e) {
+        // 忽略不支持或权限错误
+      }
+    }
+  }, [])
+
+  const lightImpact = useCallback(() => vibrate(10), [vibrate])
+  const mediumImpact = useCallback(() => vibrate(20), [vibrate])
+  const success = useCallback(() => vibrate([30, 50, 30]), [vibrate])
+  const failure = useCallback(() => vibrate([50, 100, 50]), [vibrate])
+
+  return { vibrate, lightImpact, mediumImpact, success, failure }
+}
+
 // ============ 纯净背景音乐系统 ============
 interface AudioState {
   isMuted: boolean
@@ -1566,7 +1865,7 @@ function useAudioManager() {
   
   const audioContextRef = useRef<AudioContext | null>(null)
   const masterGainRef = useRef<GainNode | null>(null)
-  const schedulerRef = useRef<NodeJS.Timeout | null>(null)
+  const schedulerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isPlayingRef = useRef(false)
   
   const initAudioContext = useCallback(() => {
@@ -1804,6 +2103,9 @@ function useAudioManager() {
 
 // ============ 主组件 ============
 export default function BambooWeavingGame() {
+  const navigate = useNavigate()
+  const { unlockScene } = usePolaroidStore()
+  
   const [progress, setProgress] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [showTutorial, setShowTutorial] = useState(true)
@@ -1813,6 +2115,24 @@ export default function BambooWeavingGame() {
   const [handTrackingEnabled, setHandTrackingEnabled] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('auto')
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showShareCard, setShowShareCard] = useState(false)
+  
+  // 演示模式状态 - 模拟手势追踪效果
+  const [isDemoMode, setIsDemoMode] = useState(false)
+  const [demoGesture, setDemoGesture] = useState<'fist' | 'thumbsUp' | 'peace' | 'pinch' | 'open' | 'none'>('none')
+  const [demoPalmCenter, setDemoPalmCenter] = useState<{ x: number; y: number } | null>(null)
+  
+  // 千人千样独特设计
+  const [uniqueDesign] = useState<UniqueDesign>(() => generateUniqueDesign())
+  const [showDesignPanel, setShowDesignPanel] = useState(false)
+  const [selectedPattern, setSelectedPattern] = useState<keyof typeof PATTERN_STYLES>('classic')
+  const [selectedColorIndex, setSelectedColorIndex] = useState(0)
+  
+  // 编织DNA创新 - 记录编织过程
+  const [weavingDNA, setWeavingDNA] = useState<WeavingDNA | null>(null)
+  const rhythmDataRef = useRef<number[]>([])
+  const weavingStartTime = useRef<number>(0)
+  const lastProgressRef = useRef<number>(0)
   
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -1820,7 +2140,7 @@ export default function BambooWeavingGame() {
   const lastY = useRef(0)
   
   // 手部追踪Hook
-  const handState = useHandTracking(videoRef, handTrackingEnabled)
+  const { state: handState, handDataRef } = useHandTracking(videoRef, handTrackingEnabled)
   
   // 音频管理Hook
   const { 
@@ -1832,8 +2152,139 @@ export default function BambooWeavingGame() {
     toggleMute 
   } = useAudioManager()
   
+  // 触觉反馈Hook
+  const { lightImpact, success: vibrateSuccess } = useHapticFeedback()
+
   // 编织音效计时
   const lastWeavingSoundTime = useRef(0)
+  
+  // 演示模式进度达到95%时自动截图
+  useEffect(() => {
+    if (isDemoMode && progress >= 0.95 && !hasScreenshotRef.current) {
+      console.log('🎬 演示模式进度95%，直接截图...')
+      const canvas = containerRef.current?.querySelector('canvas') as HTMLCanvasElement | null
+      console.log('🎬 containerRef canvas:', !!canvas, canvas?.width, canvas?.height)
+      if (canvas) {
+        try {
+          const weavingImageData = canvas.toDataURL('image/png')
+          localStorage.setItem('weavingProductImage', weavingImageData)
+          localStorage.setItem('weavingProductTime', Date.now().toString())
+          console.log('✅ 演示截图已保存，长度:', weavingImageData.length)
+          hasScreenshotRef.current = true
+        } catch (e) {
+          console.error('❌ 截图失败:', e)
+        }
+      }
+    }
+  }, [isDemoMode, progress])
+
+  // 演示模式：暴露全局函数用于自动编织
+  useEffect(() => {
+    // 暴露自动编织函数到window对象
+    (window as any).__demoAutoWeave = () => {
+      // 关闭教程弹窗，启动演示模式
+      setShowTutorial(false)
+      setIsPlaying(true)
+      setIsDemoMode(true)
+      
+      // 视角切换序列：模拟手势追踪的动画效果
+      const viewSequence: Array<'auto' | 'outside' | 'inside' | 'detail' | 'overview'> = [
+        'outside',  // 0-20%: 外部视角
+        'detail',   // 20-40%: 细节视角
+        'inside',   // 40-60%: 内部视角
+        'outside',  // 60-80%: 外部视角
+        'overview'  // 80-100%: 全貌视角
+      ]
+      
+      // 手势切换序列：模拟不同编织手势
+      const gestureSequence: Array<'fist' | 'thumbsUp' | 'peace' | 'pinch' | 'fist'> = [
+        'fist',     // 0-20%: 握拳快速编织
+        'thumbsUp', // 20-40%: 点赞加速
+        'peace',    // 40-60%: 剪刀手中速
+        'pinch',    // 60-80%: 捏合精细
+        'fist'      // 80-100%: 握拳冲刺
+      ]
+      
+      let currentViewIndex = 0
+      let currentGestureIndex = 0
+      let palmAngle = 0
+      
+      setViewMode(viewSequence[0])
+      setDemoGesture(gestureSequence[0])
+      
+      // 自动编织动画 + 视角切换 + 手势模拟
+      let currentProgress = 0
+      const autoWeaveInterval = setInterval(() => {
+        currentProgress += 0.006  // 稍慢一点，更流畅
+        setProgress(currentProgress)
+        
+        // 根据进度切换视角
+        const newViewIndex = Math.min(
+          Math.floor(currentProgress * viewSequence.length),
+          viewSequence.length - 1
+        )
+        if (newViewIndex !== currentViewIndex) {
+          currentViewIndex = newViewIndex
+          setViewMode(viewSequence[newViewIndex])
+        }
+        
+        // 根据进度切换手势
+        const newGestureIndex = Math.min(
+          Math.floor(currentProgress * gestureSequence.length),
+          gestureSequence.length - 1
+        )
+        if (newGestureIndex !== currentGestureIndex) {
+          currentGestureIndex = newGestureIndex
+          setDemoGesture(gestureSequence[newGestureIndex])
+        }
+        
+        // 模拟手掌追踪点移动（圆形轨迹）
+        palmAngle += 0.08
+        setDemoPalmCenter({
+          x: 0.5 + Math.cos(palmAngle) * 0.15,
+          y: 0.5 + Math.sin(palmAngle) * 0.1
+        })
+        
+        // 截图由useEffect监听progress处理
+        
+        if (currentProgress >= 1) {
+          clearInterval(autoWeaveInterval)
+          setViewMode('overview')
+          setDemoGesture('none')
+          setDemoPalmCenter(null)
+          setIsComplete(true)
+          setIsDemoMode(false)
+        }
+      }, 100)
+      
+      return () => {
+        clearInterval(autoWeaveInterval)
+        setIsDemoMode(false)
+      }
+    }
+    
+    // 暴露关闭弹窗函数
+    (window as any).__demoCloseModal = () => {
+      setShowTutorial(false)
+      setIsPlaying(true)
+      // 设置全貌视角
+      setViewMode('overview')
+    }
+    
+    // 暴露获取当前设计信息的函数
+    (window as any).__demoGetDesign = () => ({
+      seed: uniqueDesign.seed,
+      shape: uniqueDesign.productShape,
+      pattern: uniqueDesign.patternName,
+      colors: uniqueDesign.colorScheme
+    })
+    
+    return () => {
+      delete (window as any).__demoAutoWeave
+      delete (window as any).__demoCloseModal
+      delete (window as any).__demoGetDesign
+    }
+  }, [uniqueDesign])
   
   // 全屏切换
   const toggleFullscreen = useCallback(async () => {
@@ -1900,26 +2351,113 @@ export default function BambooWeavingGame() {
     return speeds[gesture]
   }
   
-  // 当前是否正在编织
-  const isCurrentlyWeaving = handTrackingEnabled && isPlaying && !isComplete && isWeavingGesture(handState.gesture)
+  // 当前是否正在编织（包括演示模式）
+  const isCurrentlyWeaving = (handTrackingEnabled && isPlaying && !isComplete && isWeavingGesture(handState.gesture)) ||
+    (isDemoMode && isPlaying && !isComplete && demoGesture !== 'none' && demoGesture !== 'open')
   
   // 编织时播放编织音效
   useEffect(() => {
-    if (isCurrentlyWeaving) {
-      const now = Date.now()
-      if (now - lastWeavingSoundTime.current > 150) {  // 每150ms播放一次
-        playWeavingSound()
-        lastWeavingSoundTime.current = now
+      if (isCurrentlyWeaving) {
+        const now = Date.now()
+        if (now - lastWeavingSoundTime.current > 150) {  // 每150ms播放一次
+          playWeavingSound()
+          // 编织时提供轻微震动反馈
+          lightImpact()
+          lastWeavingSoundTime.current = now
+        }
       }
-    }
   }, [isCurrentlyWeaving, progress, playWeavingSound])
   
-  // 完成时播放胜利音效
+  // 开始编织时记录开始时间
+  useEffect(() => {
+    if (isPlaying && !showTutorial && weavingStartTime.current === 0) {
+      weavingStartTime.current = Date.now()
+      rhythmDataRef.current = []
+    }
+  }, [isPlaying, showTutorial])
+  
+  // 记录编织节奏（两种方式通用）
+  // 同时在进度接近完成时提前截取截图（避免弹窗遮挡）
+  const hasScreenshotRef = useRef(false)
+  useEffect(() => {
+    if (isPlaying && !isComplete && progress > lastProgressRef.current) {
+      const speed = progress - lastProgressRef.current
+      rhythmDataRef.current.push(speed)
+      lastProgressRef.current = progress
+      
+      // 不再在95%时截图，改为在完成后等待动画效果完整后截图
+    }
+  }, [progress, isPlaying, isComplete])
+  
+  // 完成时播放胜利音效并奖励积分和碳减排
   useEffect(() => {
     if (isComplete) {
       playCompleteSound()
+      vibrateSuccess()
+      
+      // 立即保存截图，确保在演示模式跳转前完成
+      const canvases = document.querySelectorAll('canvas')
+      const canvas = canvases.length > 1 ? canvases[1] : canvases[0]
+      if (canvas) {
+        try {
+          const weavingImageData = canvas.toDataURL('image/png')
+          localStorage.setItem('weavingProductImage', weavingImageData)
+          localStorage.setItem('weavingProductTime', Date.now().toString())
+          console.log('✅ 编织截图已保存，长度:', weavingImageData.length)
+          hasScreenshotRef.current = true
+        } catch (e) {
+          console.error('截图失败:', e)
+        }
+      }
+      
+      // 生成编织DNA（传入设计种子增加差异化）
+      const totalTime = (Date.now() - weavingStartTime.current) / 1000
+      const dna = generateWeavingDNA(rhythmDataRef.current, totalTime, uniqueDesign.seed)
+      setWeavingDNA(dna)
+      
+      // 解锁拍立得场景
+      unlockScene('bamboo_forest')
+      
+      // 奖励绿色积分（基于编织DNA评分加成）
+      const bonusPoints = Math.floor(dna.smoothness * 0.3 + dna.creativity * 0.2)
+      const totalPoints = 50 + bonusPoints
+      useGreenPointsStore.getState().addPoints({
+        type: 'experience',
+        points: totalPoints,
+        description: `完成藤编体验 - ${dna.uniqueTitle}`,
+        relatedId: 'bamboo_weaving'
+      })
+      
+      // 记录碳减排
+      useCarbonAccountStore.getState().addCarbonSaving({
+        type: 'digital_experience',
+        carbonSaved: CARBON_SAVINGS_CONFIG.bamboo_weaving.baseSaving,
+        description: CARBON_SAVINGS_CONFIG.bamboo_weaving.description,
+        experienceId: 'bamboo_weaving'
+      })
+      
+      // 保存编织作品到画廊
+      const savedImage = localStorage.getItem('weavingProductImage')
+      if (savedImage) {
+        useArtworkStore.getState().addWeavingArtwork({
+          image: savedImage,
+          title: dna.uniqueTitle,
+          craftLevel: dna.craftLevel,
+          productStyle: dna.productStyle,
+          colorScheme: uniqueDesign.colorScheme,
+          smoothness: dna.smoothness,
+          creativity: dna.creativity,
+          persistence: dna.persistence,
+          carbonSaved: CARBON_SAVINGS_CONFIG.bamboo_weaving.baseSaving,
+          pointsEarned: totalPoints,
+          seed: uniqueDesign.seed,
+        })
+      }
+      
+      // 记录体验完成，检查成就
+      useEcoAchievementStore.getState().recordExperienceComplete('bamboo_weaving')
     }
-  }, [isComplete, playCompleteSound])
+  }, [isComplete, playCompleteSound, vibrateSuccess, unlockScene])
   
   // 手势控制编织进度 - 使用interval持续更新
   useEffect(() => {
@@ -2127,17 +2665,7 @@ export default function BambooWeavingGame() {
                   </span>
                 </div>
                 
-                {/* 旋转指示器 - 显示手部旋转控制视角 */}
-                {handState.isTracking && Math.abs(handState.rotationSpeed) > 2 && (
-                  <div className="absolute top-2 right-2">
-                    <span className="px-2 py-1 bg-palace-500 text-white text-xs rounded-full flex items-center gap-1">
-                      <span className={`transform ${handState.rotationSpeed > 0 ? 'rotate-90' : '-rotate-90'}`}>
-                        ↻
-                      </span>
-                      旋转视角
-                    </span>
-                  </div>
-                )}
+                {/* 旋转指示器 - 已移除以优化性能 */}
                 
                 <div className="absolute bottom-2 left-2 right-2 text-center">
                   <span className={`text-sm font-bold px-3 py-1 rounded ${
@@ -2172,16 +2700,16 @@ export default function BambooWeavingGame() {
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
       >
-        <Canvas shadows>
+        <Canvas shadows gl={{ preserveDrawingBuffer: true }}>
           <Suspense fallback={<Loader />}>
             <Scene 
               progress={progress} 
               isComplete={isComplete} 
               isWeaving={isCurrentlyWeaving}
-              handRotation={handState.rotation}
-              rotationSpeed={handState.rotationSpeed}
-              palmCenter={handState.palmCenter}
+              handDataRef={handDataRef}
               viewMode={viewMode}
+              colorScheme={uniqueDesign.colorScheme}
+              productShape={uniqueDesign.productShape}
             />
           </Suspense>
         </Canvas>
@@ -2196,6 +2724,33 @@ export default function BambooWeavingGame() {
               <p className="text-sm text-white/70">
                 {interactionMode === 'hand' ? '🖐️ 手势编织模式' : '👆 触控编织模式'}
               </p>
+              {/* 千人千样独特设计标识 - 使用专属配色 */}
+              <div className="flex items-center gap-2 mt-1">
+                <span 
+                  className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                  style={{ background: `linear-gradient(to right, ${uniqueDesign.colorScheme.primary}, ${uniqueDesign.colorScheme.accent})` }}
+                >
+                  {PATTERN_STYLES[uniqueDesign.patternStyle].icon} {uniqueDesign.patternName}
+                </span>
+                <span 
+                  className="px-1.5 py-0.5 rounded text-xs font-mono"
+                  style={{ backgroundColor: uniqueDesign.colorScheme.secondary, color: uniqueDesign.colorScheme.highlight }}
+                >
+                  #{uniqueDesign.seed.toString(16).toUpperCase()}
+                </span>
+              </div>
+              {/* 配色预览色块 */}
+              <div className="flex items-center gap-1 mt-1">
+                {Object.values(uniqueDesign.colorScheme).map((color, i) => (
+                  <div 
+                    key={i}
+                    className="w-3 h-3 rounded-full border border-white/30"
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
+                <span className="text-[10px] text-white/40 ml-1">{COLOR_SCHEMES.find(c => c.primary === uniqueDesign.colorScheme.primary)?.name || '自定义'}</span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {/* 音量控制按钮 */}
@@ -2239,21 +2794,60 @@ export default function BambooWeavingGame() {
               </button>
             </div>
           </div>
-          <ProgressBar progress={progress} />
+          <ProgressBar progress={progress} colors={{ primary: uniqueDesign.colorScheme.primary, accent: uniqueDesign.colorScheme.accent }} />
           <p className="text-xs text-white/60 mt-1 text-center">
             编织进度 {Math.floor(progress * 100)}%
           </p>
         </div>
       </div>
       
-      {/* 手势状态指示器 */}
-      {handTrackingEnabled && isPlaying && (
+      {/* 手势状态指示器 - 真实手势追踪 */}
+      {handTrackingEnabled && isPlaying && !isDemoMode && (
         <div className="absolute top-28 left-1/2 -translate-x-1/2 z-20">
           <GestureIndicator 
             gesture={handState.gesture} 
             isTracking={handState.isTracking} 
             isWeaving={isCurrentlyWeaving}
           />
+        </div>
+      )}
+      
+      {/* 演示模式手势指示器 - 模拟手势追踪 */}
+      {isDemoMode && isPlaying && (
+        <div className="absolute top-28 left-1/2 -translate-x-1/2 z-20">
+          <GestureIndicator 
+            gesture={demoGesture} 
+            isTracking={true} 
+            isWeaving={demoGesture !== 'none' && demoGesture !== 'open'}
+          />
+        </div>
+      )}
+      
+      {/* 演示模式手掌追踪点 */}
+      {isDemoMode && demoPalmCenter && (
+        <div 
+          className="absolute z-30 pointer-events-none"
+          style={{
+            left: `${demoPalmCenter.x * 100}%`,
+            top: `${demoPalmCenter.y * 100}%`,
+            transform: 'translate(-50%, -50%)'
+          }}
+        >
+          {/* 外圈脉冲 */}
+          <div className="absolute w-16 h-16 -left-8 -top-8 rounded-full border-2 border-gold-400/50 animate-ping" />
+          {/* 中圈 */}
+          <div className="absolute w-12 h-12 -left-6 -top-6 rounded-full border-2 border-gold-400/70 animate-pulse" />
+          {/* 核心点 */}
+          <div className="w-4 h-4 rounded-full bg-gold-500 shadow-lg shadow-gold-500/50" />
+          {/* 手掌图标 */}
+          <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-2xl animate-bounce">
+            {demoGesture === 'fist' && '✊'}
+            {demoGesture === 'thumbsUp' && '👍'}
+            {demoGesture === 'peace' && '✌️'}
+            {demoGesture === 'pinch' && '🤏'}
+            {demoGesture === 'open' && '✋'}
+            {demoGesture === 'none' && '🖐️'}
+          </div>
         </div>
       )}
       
@@ -2375,48 +2969,164 @@ export default function BambooWeavingGame() {
         )}
       </AnimatePresence>
       
-      {/* 完成奖励弹窗 */}
+      {/* 完成奖励弹窗 - 增强版：包含以竹代塑环保数据 */}
       <AnimatePresence>
         {fragmentEarned && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute inset-0 flex items-center justify-center bg-black/60 z-50"
+            className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 overflow-y-auto py-8"
           >
-            <div className="bg-white rounded-3xl p-8 max-w-sm mx-4 text-center">
+            <div className="bg-white rounded-3xl p-6 max-w-md mx-4 text-center">
               <motion.div
                 animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
                 transition={{ duration: 0.5, repeat: 2 }}
               >
-                <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-gold-400 to-gold-600 rounded-2xl flex items-center justify-center shadow-heritage">
-                  <Sparkles className="w-10 h-10 text-white" />
+                <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-eco-400 to-eco-600 rounded-2xl flex items-center justify-center shadow-heritage">
+                  <Sparkles className="w-8 h-8 text-white" />
                 </div>
               </motion.div>
-              <h3 className="text-2xl font-bold text-mountain-800 mb-2">
-                🎉 编织完成！
+              <h3 className="text-xl font-bold text-mountain-800 mb-2">
+                🎋 编织完成！
               </h3>
-              <p className="text-mountain-500 mb-4">
-                恭喜获得文脉碎片
+              <p className="text-mountain-500 mb-3 text-sm">
+                恭喜完成藤编体验，了解以竹代塑的环保智慧
               </p>
-              <div className="bg-paper-500 rounded-xl p-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-palace-500 rounded-lg flex items-center justify-center">
-                    <Award className="w-6 h-6 text-white" />
+              
+              {/* 以竹代塑环保数据对比 */}
+              <div className="bg-gradient-to-br from-eco-50 to-eco-100 rounded-xl p-4 mb-4">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Leaf className="w-5 h-5 text-eco-600" />
+                  <h4 className="font-bold text-eco-700">以竹代塑 · 环保数据</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-white/80 rounded-lg p-2">
+                    <div className="text-eco-600 font-bold text-lg">{BAMBOO_VS_PLASTIC_DATA.plasticReduced}g</div>
+                    <div className="text-mountain-500 text-xs">减少塑料使用</div>
                   </div>
-                  <div className="text-left">
-                    <p className="font-bold text-mountain-800">藤铁花瓶</p>
-                    <p className="text-xs text-mountain-500">稀有度: 珍品</p>
+                  <div className="bg-white/80 rounded-lg p-2">
+                    <div className="text-eco-600 font-bold text-lg">{BAMBOO_VS_PLASTIC_DATA.carbonReductionPercent}%</div>
+                    <div className="text-mountain-500 text-xs">碳排放减少</div>
+                  </div>
+                  <div className="bg-white/80 rounded-lg p-2">
+                    <div className="text-red-500 font-bold text-lg">{BAMBOO_VS_PLASTIC_DATA.plasticDecomposeYears}年</div>
+                    <div className="text-mountain-500 text-xs">塑料分解时间</div>
+                  </div>
+                  <div className="bg-white/80 rounded-lg p-2">
+                    <div className="text-eco-600 font-bold text-lg">{BAMBOO_VS_PLASTIC_DATA.bambooDecomposeMonths}月</div>
+                    <div className="text-mountain-500 text-xs">竹子分解时间</div>
+                  </div>
+                </div>
+                <div className="mt-3 text-xs text-eco-700 bg-white/60 rounded-lg p-2">
+                  <Recycle className="w-4 h-4 inline mr-1" />
+                  竹子可再生{BAMBOO_VS_PLASTIC_DATA.bambooRenewableTimes}次，每公顷竹林年固碳{BAMBOO_VS_PLASTIC_DATA.bambooForestCarbonPerHa}吨
+                </div>
+              </div>
+              
+              {/* 编织DNA - 你的专属编织档案 */}
+              {weavingDNA && (
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 mb-4 border border-amber-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{PRODUCT_STYLES[weavingDNA.productStyle].icon}</span>
+                      <div className="text-left">
+                        <p className="font-bold text-amber-800">{weavingDNA.uniqueTitle}</p>
+                        <p className="text-xs text-amber-600">编织DNA #{uniqueDesign.seed.toString(16).toUpperCase()}</p>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1 bg-amber-500 text-white rounded-full text-sm font-bold">
+                      {weavingDNA.craftLevel}
+                    </div>
+                  </div>
+                  
+                  {/* 编织数据可视化 */}
+                  <div className="grid grid-cols-4 gap-2 mb-3">
+                    <div className="bg-white/80 rounded-lg p-2 text-center">
+                      <div className="text-amber-600 font-bold">{Math.round(weavingDNA.smoothness)}</div>
+                      <div className="text-[10px] text-amber-500">平滑度</div>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-2 text-center">
+                      <div className="text-amber-600 font-bold">{Math.round(weavingDNA.creativity)}</div>
+                      <div className="text-[10px] text-amber-500">创意度</div>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-2 text-center">
+                      <div className="text-amber-600 font-bold">{Math.round(weavingDNA.persistence)}</div>
+                      <div className="text-[10px] text-amber-500">坚持度</div>
+                    </div>
+                    <div className="bg-white/80 rounded-lg p-2 text-center">
+                      <div className="text-amber-600 font-bold">{Math.round(weavingDNA.totalTime)}s</div>
+                      <div className="text-[10px] text-amber-500">用时</div>
+                    </div>
+                  </div>
+                  
+                  {/* 专属成品预览 */}
+                  <div className="bg-white/60 rounded-lg p-2 text-center">
+                    <p className="text-sm text-amber-700">
+                      🎁 你的专属成品：<span className="font-bold">{PRODUCT_STYLES[weavingDNA.productStyle].name}</span>
+                    </p>
+                    <p className="text-xs text-amber-500">{PRODUCT_STYLES[weavingDNA.productStyle].desc}</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* 获得奖励 */}
+              <div className="bg-paper-100 rounded-xl p-3 mb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 bg-eco-500 rounded-lg flex items-center justify-center">
+                      <TreeDeciduous className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-bold text-mountain-800 text-sm">+{CARBON_SAVINGS_CONFIG.bamboo_weaving.baseSaving}g 碳减排</p>
+                      <p className="text-xs text-mountain-500">+{50 + (weavingDNA ? Math.floor(weavingDNA.smoothness * 0.3 + weavingDNA.creativity * 0.2) : 0)} 绿色积分</p>
+                    </div>
+                  </div>
+                  <div className="w-10 h-10 bg-palace-500 rounded-lg flex items-center justify-center">
+                    <Award className="w-5 h-5 text-white" />
                   </div>
                 </div>
               </div>
+              
               <div className="space-y-2">
                 <Button variant="heritage" className="w-full" onClick={restartGame}>
                   <RotateCcw className="w-4 h-4 mr-2" />
                   再来一次
                 </Button>
-                <Button variant="outline-heritage" className="w-full" onClick={resetGame}>
-                  <ChevronRight className="w-4 h-4 mr-2" />
+                <Button variant="outline-heritage" className="w-full flex items-center justify-center gap-2" onClick={() => {
+                  // 解锁拍立得场景并跳转（传递完整编织DNA）
+                  unlockScene('bamboo_forest')
+                  
+                  // 截取3D场景Canvas作为编织作品图片
+                  if (containerRef.current) {
+                    const canvas = containerRef.current.querySelector('canvas')
+                    if (canvas) {
+                      try {
+                        const weavingImageData = canvas.toDataURL('image/png')
+                        // 保存到localStorage供拍立得使用
+                        localStorage.setItem('weavingProductImage', weavingImageData)
+                        localStorage.setItem('weavingProductTime', Date.now().toString())
+                      } catch (e) {
+                        console.error('截图失败:', e)
+                      }
+                    }
+                  }
+                  
+                  // 传递完整的3D渲染数据
+                  const colorParams = uniqueDesign.colorScheme ? 
+                    `&primary=${encodeURIComponent(uniqueDesign.colorScheme.primary)}&secondary=${encodeURIComponent(uniqueDesign.colorScheme.secondary)}&accent=${encodeURIComponent(uniqueDesign.colorScheme.accent)}&highlight=${encodeURIComponent(uniqueDesign.colorScheme.highlight)}` : ''
+                  const shapeParam = `&shape=${uniqueDesign.productShape}`
+                  const dnaParams = weavingDNA ? `&title=${encodeURIComponent(weavingDNA.uniqueTitle)}&level=${encodeURIComponent(weavingDNA.craftLevel)}&product=${weavingDNA.productStyle}&smooth=${Math.round(weavingDNA.smoothness)}&creative=${Math.round(weavingDNA.creativity)}` : ''
+                  navigate(`/experience/ai-polaroid?scene=bamboo_forest&design=${uniqueDesign.seed}${dnaParams}${colorParams}${shapeParam}&render3d=true`)
+                }}>
+                  <Camera className="w-4 h-4" />
+                  生成专属拍立得
+                </Button>
+                <Button variant="ghost" className="w-full flex items-center justify-center gap-2 text-mountain-600" onClick={() => setShowShareCard(true)}>
+                  <Share2 className="w-4 h-4" />
+                  分享到社交媒体
+                </Button>
+                <Button variant="ghost" className="w-full text-mountain-500" onClick={resetGame}>
                   返回选择
                 </Button>
               </div>
@@ -2425,18 +3135,82 @@ export default function BambooWeavingGame() {
         )}
       </AnimatePresence>
       
-      {/* 底部信息 */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-mountain-900/80 to-transparent">
-        <div className="max-w-lg mx-auto">
-          <div className="bg-white/10 backdrop-blur rounded-xl p-3 flex items-start gap-3">
-            <Info className="w-5 h-5 text-gold-400 flex-shrink-0 mt-0.5" />
-            <div className="text-white/80 text-sm">
-              <p className="font-medium mb-1">安溪藤铁工艺</p>
-              <p className="text-xs text-white/60">
-                国家级非物质文化遗产，以铁丝为骨架，用藤条缠绕编织，
-                创造出精美的工艺品，被誉为"指尖上的艺术"。
-              </p>
-            </div>
+      {/* 分享卡片弹窗 */}
+      <AnimatePresence>
+        {showShareCard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 p-4 overflow-y-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-2xl p-4 max-w-md w-full max-h-[90vh] overflow-y-auto relative"
+            >
+              <button
+                onClick={() => setShowShareCard(false)}
+                className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+              <h3 className="text-lg font-bold text-center mb-4 text-mountain-800">
+                🎋 分享你的环保成果
+              </h3>
+              <ShareCardGenerator 
+                customMessage={`我刚完成了藤编体验，了解到以竹代塑可减少${BAMBOO_VS_PLASTIC_DATA.carbonReductionPercent}%碳排放！`}
+                onShare={() => setShowShareCard(false)}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 左侧竖向信息 - 环保材料科普（靠近编织内容）*/}
+      <div className="absolute left-[15%] top-1/2 -translate-y-1/2 z-5">
+        <div className="flex items-center gap-3" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+          <Leaf className="w-5 h-5 text-eco-400" />
+          <div className="text-white/90 text-sm leading-relaxed">
+            <p className="font-bold text-eco-300 text-base">🎋 以竹代塑 · 绿色智慧</p>
+            <p className="text-sm text-white/70 mt-3">
+              竹子是地球上生长最快的植物之一
+            </p>
+            <p className="text-sm text-white/70 mt-2">
+              {BAMBOO_VS_PLASTIC_DATA.bambooGrowthYears}年即可成材
+            </p>
+            <p className="text-sm text-white/70 mt-2">
+              减少<span className="text-eco-300 font-bold">{BAMBOO_VS_PLASTIC_DATA.carbonReductionPercent}%</span>碳排放
+            </p>
+            <p className="text-sm text-white/70 mt-2">
+              <span className="text-eco-300 font-bold">{BAMBOO_VS_PLASTIC_DATA.bambooDecomposeMonths}个月</span>自然分解
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      {/* 右侧竖向信息 - 传统工艺介绍（靠近编织内容）*/}
+      <div className="absolute right-[15%] top-1/2 -translate-y-1/2 z-5">
+        <div className="flex items-center gap-3" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+          <Info className="w-5 h-5 text-gold-400" />
+          <div className="text-white/90 text-sm leading-relaxed">
+            <p className="font-bold text-gold-300 text-base">安溪藤铁工艺</p>
+            <p className="text-sm text-white/70 mt-3">
+              国家级非物质文化遗产
+            </p>
+            <p className="text-sm text-white/70 mt-2">
+              以铁丝为骨架
+            </p>
+            <p className="text-sm text-white/70 mt-2">
+              用藤条缠绕编织
+            </p>
+            <p className="text-sm text-white/70 mt-2">
+              创造精美工艺品
+            </p>
+            <p className="text-sm text-gold-300 font-bold mt-2">
+              "指尖上的艺术"
+            </p>
           </div>
         </div>
       </div>

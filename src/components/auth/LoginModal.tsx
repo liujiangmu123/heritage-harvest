@@ -23,6 +23,7 @@ export default function LoginModal() {
     // 模拟用户数据
     login({
       id: '1',
+      name: '文化守护者',
       nickname: '文化守护者',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
       email: 'user@example.com',
@@ -30,10 +31,7 @@ export default function LoginModal() {
       experience: 2500,
       fragments: [],
       badges: [],
-      collectibles: [],
       orders: [],
-      favorites: [],
-      createdAt: new Date().toISOString(),
     })
     
     setIsLoading(false)

@@ -2,12 +2,8 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { 
-  ArrowLeft, 
   Heart, 
   Share2, 
-  ShoppingCart, 
-  Minus, 
-  Plus,
   Star,
   MapPin,
   Sparkles,
@@ -15,7 +11,6 @@ import {
   Truck,
   Shield,
   QrCode,
-  Play,
   ChevronRight
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -23,15 +18,12 @@ import { Badge } from '@/components/ui/Badge'
 import { Card, CardContent } from '@/components/ui/Card'
 import { products } from '@/data/mockData'
 import { formatPrice } from '@/lib/utils'
-import { useCartStore } from '@/store'
 
 export default function ProductDetailPage() {
   const { id } = useParams()
   const product = products.find(p => p.id === id)
   const [selectedImage, setSelectedImage] = useState(0)
-  const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
-  const { addItem } = useCartStore()
 
   if (!product) {
     return (
@@ -44,10 +36,6 @@ export default function ProductDetailPage() {
         </div>
       </div>
     )
-  }
-
-  const handleAddToCart = () => {
-    addItem(product, quantity)
   }
 
   const relatedProducts = products.filter(
@@ -237,29 +225,6 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* 数量选择 */}
-            <div className="flex items-center gap-4">
-              <span className="text-ink-600">数量</span>
-              <div className="flex items-center border border-ink-200 rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-10 h-10 flex items-center justify-center text-ink-500 hover:bg-ink-50"
-                  disabled={quantity <= 1}
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="w-12 text-center font-medium">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-10 h-10 flex items-center justify-center text-ink-500 hover:bg-ink-50"
-                  disabled={quantity >= product.stock}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              <span className="text-sm text-ink-400">库存 {product.stock} 件</span>
-            </div>
-
             {/* 操作按钮 */}
             <div className="flex gap-4">
               <Button
@@ -277,17 +242,8 @@ export default function ProductDetailPage() {
               >
                 <Share2 className="w-5 h-5" />
               </Button>
-              <Button
-                variant="outline-heritage"
-                size="lg"
-                className="flex-1"
-                onClick={handleAddToCart}
-              >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                加入购物车
-              </Button>
               <Button variant="heritage" size="lg" className="flex-1">
-                立即购买
+                了解非遗故事
               </Button>
             </div>
           </div>

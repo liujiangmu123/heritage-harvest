@@ -73,18 +73,20 @@ export default {
           800: '#873f27',
           900: '#6d3522',
         },
-        // 非遗金色（保留兼容，指向新gold色系）
+        // === 故宫红 - 非遗文化底蕴主色 ===
+        // 代表中华传统文化的厚重与典雅
         heritage: {
-          50: '#FFFEF5',
-          100: '#FFF9C4',
-          200: '#FFF59D',
-          300: '#F5E87A',
-          400: '#F2D974',
-          500: '#E6C84D',
-          600: '#D4B52E',
-          700: '#B89B1F',
-          800: '#8B7516',
-          900: '#5C4E0F',
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#c41e3a',  // 故宫红主色
+          600: '#a91b32',
+          700: '#8b1429',
+          800: '#6d1020',
+          900: '#4a0b16',
+          950: '#2d0a0e',
         },
         // 自然绿色
         nature: {
@@ -98,6 +100,74 @@ export default {
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
+        },
+        // === 乡遗识 生态绿色主题 ===
+        // 生态绿 - 绿色共享主色调
+        eco: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',  // 主色 - 生态绿
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+          950: '#052e16',  // 深色背景
+        },
+        // 碳中和灰蓝 - 碳账户主题色
+        carbon: {
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          200: '#e2e8f0',
+          300: '#cbd5e1',
+          400: '#94a3b8',
+          500: '#64748b',  // 主色
+          600: '#475569',
+          700: '#334155',
+          800: '#1e293b',
+          900: '#0f172a',
+        },
+        // 竹青色 - 藤编/竹编主题
+        bamboo: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#14532d',
+          950: '#052e16',  // 深色背景
+        },
+        // 梯田蓝绿 - 哈尼梯田主题
+        terrace: {
+          50: '#ecfeff',
+          100: '#cffafe',
+          200: '#a5f3fc',
+          300: '#67e8f9',
+          400: '#22d3ee',
+          500: '#06b6d4',
+          600: '#0891b2',
+          700: '#0e7490',
+          800: '#155e75',
+          900: '#164e63',
+        },
+        // 泥土棕 - 泥塑/陶艺主题
+        clay: {
+          50: '#fdf8f6',
+          100: '#f2e8e5',
+          200: '#eaddd7',
+          300: '#e0cec7',
+          400: '#d2bab0',
+          500: '#bfa094',
+          600: '#a18072',
+          700: '#977669',
+          800: '#846358',
+          900: '#43302b',
         },
         // 墨色
         ink: {
@@ -120,11 +190,6 @@ export default {
         sans: ['Inter', 'Noto Sans SC', 'system-ui', 'sans-serif'],
         display: ['ZCOOL XiaoWei', 'serif'],
         heritage: ['Ma Shan Zheng', 'cursive'],
-      },
-      backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'heritage-pattern': "url('/patterns/heritage-pattern.svg')",
-        'paper-texture': "url('/textures/paper.png')",
       },
       animation: {
         'float': 'float 6s ease-in-out infinite',
@@ -149,9 +214,33 @@ export default {
         },
       },
       boxShadow: {
-        'heritage': '0 4px 60px rgba(201, 162, 39, 0.3)',
+        'heritage': '0 4px 60px rgba(196, 30, 58, 0.3)',  // 故宫红阴影
+        'heritage-hover': '0 8px 80px rgba(196, 30, 58, 0.4)',
         'card': '0 10px 40px rgba(0, 0, 0, 0.1)',
         'card-hover': '0 20px 60px rgba(0, 0, 0, 0.15)',
+        'eco': '0 4px 60px rgba(34, 197, 94, 0.2)',
+        'eco-hover': '0 8px 80px rgba(34, 197, 94, 0.3)',
+        'carbon': '0 4px 40px rgba(100, 116, 139, 0.2)',
+        'heritage-eco': '0 4px 60px rgba(196, 30, 58, 0.2), 0 4px 60px rgba(34, 197, 94, 0.2)',  // 红绿融合阴影
+      },
+      // === 故宫红+生态绿 融合渐变 ===
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'heritage-pattern': "url('/patterns/heritage-pattern.svg')",
+        'paper-texture': "url('/textures/paper.png')",
+        // 红绿融合渐变（通过金色过渡，避免圣诞配色）
+        'heritage-eco-gradient': 'linear-gradient(135deg, #c41e3a 0%, #d4a574 50%, #22c55e 100%)',
+        'heritage-eco-gradient-soft': 'linear-gradient(135deg, rgba(196, 30, 58, 0.8) 0%, rgba(212, 165, 116, 0.6) 50%, rgba(34, 197, 94, 0.8) 100%)',
+        'heritage-eco-gradient-horizontal': 'linear-gradient(90deg, #c41e3a 0%, #d4a574 50%, #22c55e 100%)',
+        // 生态主题渐变
+        'eco-gradient': 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+        'eco-gradient-soft': 'linear-gradient(135deg, rgba(34, 197, 94, 0.8) 0%, rgba(22, 163, 74, 0.8) 100%)',
+        'eco-gradient-vertical': 'linear-gradient(180deg, #22c55e 0%, #16a34a 100%)',
+        // 非遗主题渐变
+        'heritage-gradient': 'linear-gradient(135deg, #c41e3a 0%, #a91b32 100%)',
+        'heritage-gradient-soft': 'linear-gradient(135deg, rgba(196, 30, 58, 0.8) 0%, rgba(169, 27, 50, 0.8) 100%)',
+        // 碳中和渐变
+        'carbon-gradient': 'linear-gradient(135deg, #64748b 0%, #475569 100%)',
       },
     },
   },

@@ -12,6 +12,7 @@ dist/
 # IDE
 .vscode/
 .idea/
+.kiro/
 
 # OS
 .DS_Store
@@ -20,3 +21,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Lock files (optional, can be kept for reproducible builds)
+# package-lock.json
