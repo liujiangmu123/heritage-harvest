@@ -1,0 +1,1 @@
+import{r as e}from"./three-vendor-BoyHWg1a.js";import{a as r}from"./core-vendor-Csnc5NqJ.js";function o(){const o=r();return e.useEffect(()=>{o("/creative-gallery",{replace:!0})},[o]),null}export{o as default};

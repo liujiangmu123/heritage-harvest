@@ -3,17 +3,51 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="乡遗识 - 数字非遗赋能乡村振兴的创新生态系统" />
-    <meta name="keywords" content="非物质文化遗产,乡村振兴,数字藏品,农产品,传统文化" />
-    <title>乡遗识 Heritage Harvest - 让乡愁在数字时代被传承</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="description" content="乡遗识 - 运用 WebXR、Three.js、MediaPipe 等先进前端技术，将传统非遗工艺转化为可交互的数字体验" />
+    <meta name="keywords" content="非物质文化遗产,乡村振兴,数字藏品,陕西非遗,皮影戏,秦腔,WebXR,Three.js" />
+    <title>乡遗识 - 非遗数字体验平台</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/heritage-harvest/manifest.json" />
+    <meta name="theme-color" content="#c2410c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="乡遗识" />
+    <link rel="apple-touch-icon" href="/heritage-harvest/icons/icon-192x192.png" />
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="乡遗识 - 非遗数字体验平台" />
+    <meta property="og:description" content="运用先进前端技术，将传统非遗工艺转化为可交互的数字体验" />
+    <meta property="og:image" content="/heritage-harvest/og-image.png" />
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/heritage-harvest/assets/index-CCr_emsx.js"></script>
-    <link rel="stylesheet" crossorigin href="/heritage-harvest/assets/index-X7sjaMD2.css">
+    <script type="module" crossorigin src="/heritage-harvest/assets/index-DkRoqGlp.js"></script>
+    <link rel="modulepreload" crossorigin href="/heritage-harvest/assets/three-vendor-BoyHWg1a.js">
+    <link rel="modulepreload" crossorigin href="/heritage-harvest/assets/core-vendor-Csnc5NqJ.js">
+    <link rel="modulepreload" crossorigin href="/heritage-harvest/assets/ui-vendor-BCOa7pYq.js">
+    <link rel="stylesheet" crossorigin href="/heritage-harvest/assets/index-C4WvRMa1.css">
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/heritage-harvest/sw.js')
+            .then((registration) => {
+              console.log('SW registered:', registration.scope);
+            })
+            .catch((error) => {
+              console.log('SW registration failed:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
