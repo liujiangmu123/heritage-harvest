@@ -147,7 +147,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-ink-400 text-sm">
-              © 2024 兰州石化职业技术大学 - 刘智远开发团队. 保留所有权利。
+              © 2024 保留所有权利。
             </p>
             <div className="flex items-center gap-6">
               <span className="text-ink-500 text-sm flex items-center gap-2">
